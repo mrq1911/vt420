@@ -1,0 +1,54 @@
+# check and test every push; on main, publish each package whose version npm does not have yet, through npm's
+# trusted publishing (no token here; npmjs.com trusts this workflow for the packages)
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx biome ci .
+      - run: npx tsc --noEmit
+      - run: npx vitest --run
+
+  publish:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # trusted publishing needs npm 11.5.1 or newer
+      - run: npm install -g npm@11
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: publish new versions, the SDK before the emulator
+        run: |
+          for dir in packages/vt420 packages/vt420-emu; do
+            name="$(node -p "require('./$dir/package.json').name")"
+            version="$(node -p "require('./$dir/package.json').version")"
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is on npm already"
+            elif ! npm view "$name" name >/dev/null 2>&1; then
+              # npm trusts a workflow only for a package that exists: the first version goes out by hand
+              echo "::warning::$name is not on npm yet; publish it once by hand and add this workflow as its trusted publisher"
+            else
+              npm publish --workspace "$dir" --access public
+            fi
+          done

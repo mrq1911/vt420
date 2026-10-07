@@ -163,6 +163,10 @@ names resolve to the sources, through the `source` export condition (`node --con
 of tsconfig.json, the aliases of vitest.config.ts, and the page's import map); published, to `dist/`. The SDK's tests
 live at the top, beside the browser terminal, so that the SDK does not depend on the emulator even to be tested.
 
+A release is a new version in a package's package.json: CI (`.github/workflows/ci.yml`) checks and tests every
+push, and on main publishes each package whose version npm does not have yet, the SDK first, through npm's trusted
+publishing, with provenance. Programs that use them take the new version when they bump their dependency.
+
 `scripts/firmware-probe.ts` asks the VT420's firmware, running in Blaze, everything `vt420-probe` asks the terminal.
 
 MIT licensed; the VT323 font in `src/web/fonts` is under the SIL Open Font License.

@@ -28,6 +28,6 @@
 		"prepack": "npm run build"
 	},
 	"dependencies": {
-		"@mrq/vt420": "0.1.0"
+		"@mrq/vt420": "^0.1.0"
 	}
 }
