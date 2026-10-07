@@ -4,8 +4,9 @@
 
 import { type KeyPress, keyBytes, pastedBytes } from "@mrq/vt420-emu/keyboard.js";
 import { FACTORY_SETUP, latin1Bytes, RECOMMENDED_SETUP, Vt420, type Vt420Setup } from "@mrq/vt420-emu/vt420.js";
+import { showFavicon } from "./favicon.ts";
 import { mapKey } from "./keys.ts";
-import { type Glide, type Knobs, Renderer, type Selection } from "./render.ts";
+import { type Glide, type Knobs, PHOSPHORS, Renderer, type Selection } from "./render.ts";
 import { DEFAULT_DISPLAY, type DisplaySettings, SetupScreen } from "./setup.ts";
 import { Sound } from "./sound.ts";
 
@@ -76,8 +77,7 @@ class Page {
 		});
 		const canvas = document.querySelector<HTMLCanvasElement>("#screen")!;
 		this.renderer = new Renderer(canvas, this.term);
-		this.renderer.setPhosphor(this.display.phosphor);
-		this.renderer.setLook(this.display.weight, this.display.persistence);
+		this.showLook();
 		this.knobs();
 		this.input = document.querySelector<HTMLTextAreaElement>("#keyboard")!;
 		this.listen(canvas);
@@ -335,6 +335,13 @@ class Page {
 		}
 	}
 
+	/** The phosphor and how the characters are drawn, on the screen and in the tab's icon. */
+	private showLook(): void {
+		this.renderer.setPhosphor(this.display.phosphor);
+		this.renderer.setLook(this.display.weight, this.display.persistence);
+		showFavicon(PHOSPHORS[this.display.phosphor]);
+	}
+
 	/** The brightness and contrast thumbwheels under the screen: dragged up and down, or turned with the wheel. */
 	private knobs(): void {
 		const knobs: Knobs = { brightness: 0.35, contrast: 0.7, ...stored<Knobs>(KNOBS_KEY) };
@@ -384,8 +391,7 @@ class Page {
 			target: this.term,
 			display: this.display,
 			changed: () => {
-				this.renderer.setPhosphor(this.display.phosphor);
-				this.renderer.setLook(this.display.weight, this.display.persistence);
+				this.showLook();
 			},
 			save: () => {
 				localStorage.setItem(SETUP_KEY, JSON.stringify(this.term.setup));
@@ -395,8 +401,7 @@ class Page {
 				this.term.setup = factory ? { ...FACTORY_SETUP } : { ...PAGE_SETUP, ...stored<Vt420Setup>(SETUP_KEY) };
 				this.term.powerUp();
 				Object.assign(this.display, DEFAULT_DISPLAY, factory ? {} : stored<DisplaySettings>(DISPLAY_KEY));
-				this.renderer.setPhosphor(this.display.phosphor);
-				this.renderer.setLook(this.display.weight, this.display.persistence);
+				this.showLook();
 			},
 			exit: () => this.leaveSetup(),
 		});

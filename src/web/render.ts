@@ -23,7 +23,7 @@ import { PICTURES, SHADES, SHAPES, STROKES } from "./glyphs.ts";
 
 export type Phosphor = "white" | "green" | "amber";
 
-const PHOSPHORS: Readonly<Record<Phosphor, [number, number, number]>> = {
+export const PHOSPHORS: Readonly<Record<Phosphor, [number, number, number]>> = {
 	white: [238, 244, 255],
 	green: [92, 255, 140],
 	amber: [255, 184, 72],
