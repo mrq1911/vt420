@@ -1,0 +1,33 @@
+{
+	"name": "@mrq/vt420-emu",
+	"version": "0.1.0",
+	"description": "A DEC VT420 in memory, calibrated against the real terminal and its firmware: page memory, every control function of one session, the serial line, and its own font",
+	"license": "MIT",
+	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mrq1911/vt420.git",
+		"directory": "packages/vt420-emu"
+	},
+	"engines": {
+		"node": ">=22.18"
+	},
+	"exports": {
+		"./*.js": {
+			"source": "./src/*.ts",
+			"types": "./dist/*.d.ts",
+			"default": "./dist/*.js"
+		}
+	},
+	"files": [
+		"dist",
+		"src"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"prepack": "npm run build"
+	},
+	"dependencies": {
+		"@mrq/vt420": "0.1.0"
+	}
+}

@@ -1,0 +1,30 @@
+{
+	"name": "@mrq/vt420",
+	"version": "0.1.0",
+	"description": "Drive a DEC VT420 from a program: what the terminal is and can do, frames drawn in the fewest bytes, its keyboard and its character sets",
+	"license": "MIT",
+	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mrq1911/vt420.git",
+		"directory": "packages/vt420"
+	},
+	"engines": {
+		"node": ">=22.18"
+	},
+	"exports": {
+		"./*.js": {
+			"source": "./src/*.ts",
+			"types": "./dist/*.d.ts",
+			"default": "./dist/*.js"
+		}
+	},
+	"files": [
+		"dist",
+		"src"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"prepack": "npm run build"
+	}
+}

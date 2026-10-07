@@ -1,0 +1,31 @@
+{
+	"name": "vt420",
+	"version": "0.1.0",
+	"private": true,
+	"description": "A DEC VT420: an SDK for programs that drive one, and an emulator calibrated against the real terminal",
+	"license": "MIT",
+	"type": "module",
+	"engines": {
+		"node": ">=22.18"
+	},
+	"workspaces": [
+		"packages/vt420",
+		"packages/vt420-emu"
+	],
+	"scripts": {
+		"check": "biome check --write --error-on-warnings . && tsc --noEmit",
+		"test": "vitest --run",
+		"build": "npm run build --workspaces"
+	},
+	"dependencies": {
+		"@mrq/vt420": "0.1.0",
+		"@mrq/vt420-emu": "0.1.0",
+		"node-pty": "1.1.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.15",
+		"@types/node": "26.6.3",
+		"typescript": "7.0.2",
+		"vitest": "4.1.11"
+	}
+}
