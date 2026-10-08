@@ -118,7 +118,10 @@ The same probe also runs against the VT420's own firmware (V1.4, as on the termi
 [Blaze](https://github.com/mmastrac/blaze), which emulates the terminal's hardware: `scripts/firmware-probe.ts`
 keeps its answers beside it as `vt420-firmware.json`, checked the same way. It answers 70 of the 72 cases as the
 terminal did (the other two depend on its tab stops), so a new case can be asked of the firmware in seconds, with no
-trip to the terminal; what it takes for settings differ, as the conformance test allows for.
+trip to the terminal; what it takes for settings differ, as the conformance test allows for. The terminal recorded is
+the North American variant, which its Set-Up names VT420 AV1.4: the same ROM, told by a pin it reads at power-up,
+which also drops the language and keyboard choices from Set-Up. Blaze boots it as the worldwide variant, VT420 V1.4,
+which the probe tells apart only by the 9 (national character sets) in DA1.
 
 The characters are the VT420's own, dot for dot: its character generator as firmware V1.4 loads it into video
 memory, read from the firmware running in [Blaze](https://github.com/mmastrac/blaze), an emulator of the terminal's
