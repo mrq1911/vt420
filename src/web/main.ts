@@ -295,6 +295,33 @@ class Page {
 			this.selecting = undefined;
 			if (this.selection) void this.copy();
 		});
+		// the wheel pages as Prev Screen and Next Screen do, a page for every half screen it turns
+		let turned = 0;
+		let turnedAt = 0;
+		canvas.addEventListener(
+			"wheel",
+			(event) => {
+				event.preventDefault();
+				if (this.setupScreen) return;
+				const lines = this.term.visibleLines;
+				const rowHeight = this.renderer.rows(canvas.getBoundingClientRect().height).rowHeight;
+				const delta =
+					event.deltaMode === WheelEvent.DOM_DELTA_LINE
+						? event.deltaY
+						: event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+							? event.deltaY * lines
+							: event.deltaY / rowHeight;
+				if (event.timeStamp - turnedAt > 300 || Math.sign(delta) !== Math.sign(turned)) turned = 0;
+				turnedAt = event.timeStamp;
+				turned += delta;
+				const step = Math.max(3, Math.floor(lines / 2));
+				while (Math.abs(turned) >= step) {
+					this.press({ key: turned < 0 ? "Prev" : "Next" });
+					turned -= Math.sign(turned) * step;
+				}
+			},
+			{ passive: false },
+		);
 	}
 
 	private key(event: KeyboardEvent): void {

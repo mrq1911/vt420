@@ -54,6 +54,7 @@ from what it wrote, and `--keep` keeps it for the next window. See `vt420 --help
 | Shift or Alt with F1-F10 | F11, F12, F13, F14, Help, Do, F17, F18, F19, F20 |
 | Ctrl with an F key | that key with Shift: a user-defined key |
 | Insert, Delete, Home, End, Page Up, Page Down | Insert Here, Remove, Find, Select, Prev Screen, Next Screen |
+| the mouse wheel or two fingers on a trackpad | Prev Screen and Next Screen, one for every half screen turned |
 | keypad +, Alt with keypad - | the keypad's comma and minus |
 | Escape | ESC, which the LK401 does not have |
 | Alt with a key | ESC and the key (Set-Up can turn it off) |
