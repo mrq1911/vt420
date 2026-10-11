@@ -267,6 +267,15 @@ class Page {
 			focus();
 		});
 		canvas.addEventListener("mousedown", (event) => {
+			// the middle button, and Paste in the right button's menu, paste into the editable under the pointer
+			if (event.button !== 0) {
+				input.style.setProperty("--x", `${event.clientX}px`);
+				input.style.setProperty("--y", `${event.clientY}px`);
+				input.classList.add("under");
+				event.preventDefault();
+				focus();
+				return;
+			}
 			this.selecting = this.renderer.cellAt(event.clientX, event.clientY);
 			this.selection = undefined;
 			event.preventDefault();
@@ -281,7 +290,8 @@ class Page {
 			const cell = this.renderer.cellAt(event.clientX, event.clientY);
 			if (cell) this.selection = ordered(this.selecting, cell);
 		});
-		window.addEventListener("mouseup", () => {
+		window.addEventListener("mouseup", (event) => {
+			if (event.button !== 0) setTimeout(() => input.classList.remove("under"), 300);
 			this.selecting = undefined;
 			if (this.selection) void this.copy();
 		});

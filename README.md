@@ -68,7 +68,8 @@ amber), how heavy the characters are drawn, and how long the phosphor glows afte
 contrast are two thumbwheels under the screen, as on the terminal: drag them or turn them with the mouse wheel.
 Changes act at once; Save keeps them in the browser, Recall and Default go back to the saved ones or the factory's.
 Until something is saved the page starts from the Set-Up pi-vt420's README lists (jump scroll, 6 pages of 24 lines,
-keys locked), with autowrap on for a shell's long lines. Dragging the mouse copies text, and Ctrl+Shift+V pastes.
+keys locked), with autowrap on for a shell's long lines. Dragging the mouse copies text; Ctrl+Shift+V, Shift+Insert
+(Cmd+V on a Mac), the middle button and Paste in the right button's menu paste.
 
 ## What it does
 

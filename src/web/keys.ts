@@ -60,6 +60,9 @@ export function mapKey(event: KeyboardEvent, keypadApplication: boolean): Mapped
 	if (alt && code === "Enter") return { local: "fullscreen" };
 	if (ctrl && shift && code === "KeyC") return { local: "copy" };
 	if (ctrl && shift && code === "KeyV") return { local: "paste" };
+	if (shift && !ctrl && !alt && code === "Insert") return { local: "paste" };
+	if (event.metaKey && !ctrl && !alt)
+		return code === "KeyC" ? { local: "copy" } : code === "KeyV" ? { local: "paste" } : undefined;
 	if (code === "ScrollLock" || code === "Pause") return { local: "hold" };
 	if (code === "ContextMenu") return { local: "setup" };
 	const fn = /^F(\d+)$/.exec(code);

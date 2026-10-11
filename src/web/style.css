@@ -145,6 +145,14 @@ body {
 	opacity: 0;
 }
 
+#keyboard.under {
+	left: calc(var(--x) - 8px);
+	top: calc(var(--y) - 8px);
+	width: 16px;
+	height: 16px;
+	z-index: 10;
+}
+
 #notice {
 	position: fixed;
 	left: 50%;
