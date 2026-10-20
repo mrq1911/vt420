@@ -156,3 +156,28 @@ describe("vt420 terminal probe", () => {
 		expect(emulator.autowrap).toBe(false);
 	});
 });
+
+describe("vt420 input", () => {
+	const keys = (...chunks: string[]): string[] => {
+		const events: string[] = [];
+		const parser = new InputParser({
+			onEvent: (event) =>
+				events.push(event.type === "key" ? event.key : `${event.type}:${"text" in event ? event.text : ""}`),
+		});
+		for (const chunk of chunks) parser.feed(chunk);
+		parser.dispose();
+		return events;
+	};
+
+	it("turns an emulator's mouse wheel into keys, SGR or X10, and drops its other mouse reports", () => {
+		expect(keys("\x1b[<64;10;5M", "\x1b[<65;10;5M", "\x1b[<80;1;1M", "\x1b[<69;1;1M")).toEqual([
+			"wheelup",
+			"wheeldown",
+			"ctrl+wheelup",
+			"shift+wheeldown",
+		]);
+		expect(keys("\x1b[<0;10;5M\x1b[<0;10;5m\x1b[<66;1;1Mx")).toEqual(["text:x"]);
+		// X10: button, column and row as bytes plus 32, never typed into the input
+		expect(keys("\x1b[M`!!", "\x1b[Ma!", "!", "\x1b[M #!x")).toEqual(["wheelup", "wheeldown", "text:x"]);
+	});
+});

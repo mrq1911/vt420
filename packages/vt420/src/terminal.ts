@@ -104,6 +104,10 @@ const SAVED_MODES: ReadonlyArray<[mode: string, fallback: number | undefined]> =
 	["?4", undefined],
 ];
 
+/** xterm's button-press reports (1000) in its SGR encoding (1006), which also carry the wheel. */
+const WHEEL_ON = "\x1b[?1000h\x1b[?1006h";
+const WHEEL_OFF = "\x1b[?1006l\x1b[?1000l";
+
 /** DA2 terminal types. */
 const TERMINAL_NAMES: Record<number, string> = {
 	0: "VT100",
@@ -347,6 +351,7 @@ export class Vt420Terminal {
 	private usedSetRawMode = false;
 	private probe: ProbeResult = emptyProbe();
 	private closed = false;
+	private wheel = false;
 	private busyUntil = 0;
 	private rawListener: ((chunk: Buffer) => void) | undefined;
 	private readonly dataHandler = (chunk: Buffer): void => {
@@ -450,6 +455,16 @@ export class Vt420Terminal {
 		this.setup();
 	}
 
+	/**
+	 * Ask an emulator for its mouse wheel, as wheelup and wheeldown keys, or stop; a DEC terminal ignores both.
+	 * Its clicks are reported too, so selecting text then takes Shift on most emulators. Off again on close.
+	 */
+	setWheel(on: boolean): void {
+		if (on === this.wheel) return;
+		this.wheel = on;
+		this.write(on ? WHEEL_ON : WHEEL_OFF);
+	}
+
 	/** Bytes as they are, from a program that draws on the terminal itself. */
 	writeBytes(chunk: Uint8Array): void {
 		if (this.closed || chunk.length === 0) return;
@@ -465,7 +480,7 @@ export class Vt420Terminal {
 
 	/** What puts the terminal back as the session found it, then clears the screen. */
 	originalState(): string {
-		return restoreSequence(this.probe, this.caps, this.options);
+		return (this.wheel ? WHEEL_OFF : "") + restoreSequence(this.probe, this.caps, this.options);
 	}
 
 	/** Milliseconds until the line has sent what was written, at the known line speed. */
@@ -475,7 +490,7 @@ export class Vt420Terminal {
 
 	close(): void {
 		if (this.closed) return;
-		this.write(restoreSequence(this.probe, this.caps, this.options));
+		this.write(this.originalState());
 		this.closed = true;
 		this.parser.dispose();
 		process.stdin.off("data", this.dataHandler);
@@ -586,6 +601,7 @@ export class Vt420Terminal {
 					eightBit: caps.eightBit,
 				}),
 				caps.statusLine ? statusLineType(2) : "",
+				this.wheel ? WHEEL_ON : "",
 				clear ? "\x1b[m\x1b[H\x1b[2J" : "\x1b[m",
 			].join(""),
 		);

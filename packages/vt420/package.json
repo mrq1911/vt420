@@ -1,6 +1,6 @@
 {
 	"name": "@mrq/vt420",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Drive a DEC VT420 from a program: what the terminal is and can do, frames drawn in the fewest bytes, its keyboard and its character sets",
 	"license": "MIT",
 	"type": "module",

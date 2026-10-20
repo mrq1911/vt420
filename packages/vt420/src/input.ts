@@ -2,7 +2,8 @@
  * Keyboard and report parser for a VT420 (and anything that speaks the same ANSI/DEC dialect).
  *
  * LK401 keys arrive as CSI n ~ (editing keypad, F6-F20, Help, Do), SS3 (PF1-PF4, keypad in application
- * mode), CSI A-D (arrows) or C0 controls. Terminal reports (DA, DSR, CPR, DECRPM, DECRPSS, DECAUPSS, DECRPDE)
+ * mode), CSI A-D (arrows) or C0 controls; an emulator's mouse wheel, once asked for, as wheelup and wheeldown in
+ * xterm mouse reports, SGR or X10, with other mouse reports dropped. Terminal reports (DA, DSR, CPR, DECRPM, DECRPSS, DECAUPSS, DECRPDE)
  * share the same stream and are surfaced as responses. 8-bit C1 introducers are accepted as their 7-bit
  * equivalents, and GR bytes are decoded with the terminal's user-preferred supplemental set, or as UTF-8
  * when the terminal speaks it.
@@ -158,6 +159,14 @@ function shiftedKey(code: string, parameter: number | undefined): string | undef
 	return withModifiers(name, parameter - 1);
 }
 
+/** A wheel turn in an xterm mouse report's button code (64 up, 65 down; shift 4, meta 8, ctrl 16); not other buttons. */
+function wheelKey(button: number): string | undefined {
+	const direction = button & 0xc3;
+	if (direction !== 64 && direction !== 65) return undefined;
+	const prefix = `${button & 16 ? "ctrl+" : ""}${button & 8 ? "alt+" : ""}${button & 4 ? "shift+" : ""}`;
+	return `${prefix}${direction === 64 ? "wheelup" : "wheeldown"}`;
+}
+
 /** xterm-style modifier parameter: 1 + (shift 1 | alt 2 | ctrl 4 | meta 8). */
 function withModifiers(key: string, parameter: number | undefined): string {
 	if (!parameter || parameter < 2) return key;
@@ -169,7 +178,7 @@ function withModifiers(key: string, parameter: number | undefined): string {
 	return prefix + key;
 }
 
-type State = "ground" | "escape" | "csi" | "ss3" | "string" | "stringEscape";
+type State = "ground" | "escape" | "csi" | "ss3" | "string" | "stringEscape" | "mouse";
 
 export class InputParser {
 	private readonly options: InputParserOptions;
@@ -271,6 +280,15 @@ export class InputParser {
 				this.reset();
 				this.ss3(String.fromCharCode(byte));
 				return;
+			case "mouse": {
+				// an X10 report's button, column and row, each a byte plus 32
+				this.sequence += String.fromCharCode(byte);
+				if (this.sequence.length < 3) return;
+				const wheel = wheelKey(this.sequence.charCodeAt(0) - 32);
+				this.reset();
+				if (wheel) this.key(wheel);
+				return;
+			}
 			case "string":
 				if (byte === 0x1b) this.state = "stringEscape";
 				else if (byte === 0x9c || (byte === 0x07 && this.stringKind === "osc")) this.finishString();
@@ -428,6 +446,15 @@ export class InputParser {
 		}
 		if (prefix === "" && intermediates === "" && final === "R" && params.length === 2 && (params[0] ?? 0) > 1) {
 			this.respond({ kind: "cpr", row: params[0]!, col: params[1]! });
+			return;
+		}
+		if (prefix === "<" && intermediates === "" && final === "M") {
+			const wheel = wheelKey(params[0] ?? 0);
+			if (wheel) this.key(wheel);
+			return;
+		}
+		if (prefix === "" && body === "" && final === "M") {
+			this.state = "mouse";
 			return;
 		}
 		if (prefix !== "" || intermediates !== "") return;
