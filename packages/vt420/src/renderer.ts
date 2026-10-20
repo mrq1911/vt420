@@ -27,11 +27,12 @@ import {
 	lineWidth,
 	SET_ASCII,
 	SET_GRAPHICS,
+	SET_SOFT,
 	SET_SUPPLEMENTAL,
 	SET_TECHNICAL,
 } from "./cells.ts";
 import { cellToUnicode, type SupplementalSet } from "./charset.ts";
-import { charsetDesignations } from "./sequences.ts";
+import { charsetDesignations, g2Designation, SOFT_FONT_DESIGNATION } from "./sequences.ts";
 
 export interface RendererOptions {
 	rows: number;
@@ -57,6 +58,8 @@ export interface RendererOptions {
 	 * starting from the power-up sets, so they are repeated on every entry.
 	 */
 	designations?: string;
+	/** G2 holds DEC Technical, put back after soft-font glyphs borrow G2; false when it holds ASCII instead. */
+	technical?: boolean;
 }
 
 export interface Frame {
@@ -104,6 +107,7 @@ export function rendererFor(caps: {
 		leftRightMargins: caps.leftRightMargins === true,
 		smoothScroll: caps.smoothScroll === true,
 		designations: charsetDesignations(caps),
+		technical: caps.technical,
 	});
 }
 
@@ -143,6 +147,8 @@ export class Renderer {
 	private cursorCol = -1;
 	private attrs = -1;
 	private gl = -1;
+	/** G2 holds the soft font for now; every frame and display switch puts the session's G2 back. */
+	private g2Soft = false;
 	private region: { top: number; bottom: number } | undefined;
 	private cursorVisible: boolean | undefined;
 	/** DECLRMM has been set, so CSI s is DECSLRM. */
@@ -181,6 +187,7 @@ export class Renderer {
 		this.cursorCol = -1;
 		this.attrs = -1;
 		this.gl = -1;
+		this.g2Soft = false;
 		this.region = undefined;
 		this.cursorVisible = undefined;
 		this.marginMode = false;
@@ -218,6 +225,7 @@ export class Renderer {
 		for (let row = 0; row < this.options.rows; row++) {
 			this.diffLine(row, frame.lines[row] ?? { cells: [], attr: LINE_SINGLE });
 		}
+		this.useSoft(false);
 		if (this.options.statusLine && frame.status) this.diffStatus(frame.status);
 		const body = this.out;
 		this.out = [];
@@ -267,6 +275,7 @@ export class Renderer {
 	 * Entering also repeats the designations for terminals whose status line keeps its own.
 	 */
 	private switchDisplay(status: boolean): void {
+		this.useSoft(false);
 		this.emit(status ? "\x1b[1$}" : "\x1b[0$}");
 		this.cursorRow = status ? STATUS_ROW : -1;
 		this.cursorCol = -1;
@@ -589,7 +598,7 @@ export class Renderer {
 
 	/** Bytes a drawing step would emit, leaving the terminal state as it was. */
 	private measure(draw: () => void): number {
-		const { out, cursorRow, cursorCol, attrs, gl, region, marginMode } = this;
+		const { out, cursorRow, cursorCol, attrs, gl, g2Soft, region, marginMode } = this;
 		this.out = [];
 		draw();
 		const bytes = this.out.join("").length;
@@ -598,6 +607,7 @@ export class Renderer {
 		this.cursorCol = cursorCol;
 		this.attrs = attrs;
 		this.gl = gl;
+		this.g2Soft = g2Soft;
 		this.region = region;
 		this.marginMode = marginMode;
 		return bytes;
@@ -679,7 +689,7 @@ export class Renderer {
 				continue;
 			}
 			// DECFRA takes its fill character from GL, which only holds ASCII in Unicode mode.
-			const fillable = !this.options.unicode || cellSet(cell) === SET_ASCII;
+			const fillable = (!this.options.unicode || cellSet(cell) === SET_ASCII) && cellSet(cell) !== SET_SOFT;
 			if (allowFill && fillable && this.options.rectangularOps && run >= FILL_MIN) {
 				this.moveTo(row, col);
 				this.fill(row, col, run, cell);
@@ -701,6 +711,7 @@ export class Renderer {
 		this.setAttrs(cell & ATTR_MASK);
 		const set = cellSet(cell);
 		const code = cellCode(cell);
+		if (set === SET_TECHNICAL) this.useSoft(false);
 		let pch = code;
 		if (code !== 0x20 && !(set === SET_ASCII && this.gl === SET_GRAPHICS && code < 0x5f) && set !== this.gl) {
 			if (set === SET_SUPPLEMENTAL && this.options.eightBit) pch = code | 0x80;
@@ -725,6 +736,12 @@ export class Renderer {
 			this.emit(set === SET_ASCII ? char : cellToUnicode(set, code, "latin1"));
 			return;
 		}
+		if (set === SET_SOFT) {
+			this.useSoft(true);
+			this.emit(SINGLE_SHIFT[SET_TECHNICAL]! + char);
+			return;
+		}
+		if (set === SET_TECHNICAL) this.useSoft(false);
 		if (code === 0x20 || set === this.gl || (set === SET_ASCII && this.gl === SET_GRAPHICS && code < 0x5f)) {
 			this.emit(char);
 		} else if (set === SET_SUPPLEMENTAL && this.options.eightBit) {
@@ -735,6 +752,14 @@ export class Renderer {
 			this.emit(LOCKING_SHIFT[set]! + char);
 			this.gl = set;
 		}
+	}
+
+	/** Designate the soft font into G2, or the session's set back; G2 locked into GL no longer holds what it did. */
+	private useSoft(soft: boolean): void {
+		if (soft === this.g2Soft) return;
+		this.emit(soft ? SOFT_FONT_DESIGNATION : g2Designation(this.options.technical !== false));
+		this.g2Soft = soft;
+		if (this.gl === SET_TECHNICAL) this.gl = -1;
 	}
 
 	private advance(row: number, width: number): void {

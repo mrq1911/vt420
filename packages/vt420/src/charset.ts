@@ -1,14 +1,14 @@
 /**
  * VT420 character sets and Unicode transliteration.
  *
- * The frontend designates four sets once at startup and never changes them:
+ * The frontend designates four sets once at startup and keeps them, but for the renderer lending G2 to a soft font:
  *   G0 ASCII, G1 DEC Special Graphics, G2 DEC Technical, G3 DEC Supplemental or ISO Latin-1.
  * Text from the model is Unicode; every code point is mapped to a glyph in one of these sets, to a short
  * transliteration built from them, or dropped. Nothing outside the sets ever reaches the terminal, so text
  * can never inject control sequences.
  */
 
-import { ATTR_REVERSE, glyph, SET_ASCII, SET_GRAPHICS, SET_SUPPLEMENTAL, SET_TECHNICAL } from "./cells.ts";
+import { ATTR_REVERSE, glyph, SET_ASCII, SET_GRAPHICS, SET_SOFT, SET_SUPPLEMENTAL, SET_TECHNICAL } from "./cells.ts";
 
 /** DEC Special Graphics codes 0x5F-0x7E. Codes 0x20-0x5E are identical to ASCII. */
 export const SPECIAL_GRAPHICS: ReadonlyMap<number, string> = new Map([
@@ -674,6 +674,8 @@ export function cellToUnicode(set: number, code: number, supplemental: Supplemen
 			return TECHNICAL.get(code) ?? TECHNICAL_SIGMA_PREVIEW.get(code) ?? REPLACEMENT;
 		case SET_SUPPLEMENTAL:
 			return (supplemental === "latin1" ? LATIN1_SUPPLEMENTAL : DEC_SUPPLEMENTAL).get(code) ?? REPLACEMENT;
+		case SET_SOFT:
+			return " ";
 		default:
 			return String.fromCharCode(code);
 	}

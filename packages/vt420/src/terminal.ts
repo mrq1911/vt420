@@ -46,6 +46,8 @@ export interface TerminalCapabilities {
 	leftRightMargins?: boolean;
 	/** DECSCLM at startup, when the terminal reported it: true when it scrolls smoothly. */
 	smoothScroll?: boolean;
+	/** Soft fonts (DECDLD), DA1 extension 7, on a terminal taking DEC sets; emulators that claim it rarely draw them. */
+	softFont?: boolean;
 }
 
 export interface Vt420TerminalOptions {
@@ -281,6 +283,7 @@ export function capabilitiesFromProbe(
 		...(smoothScroll === undefined ? {} : { smoothScroll }),
 		doubleSize: options.doubleSize === "on" || (options.doubleSize === "auto" && doubleWidth),
 		leftRightMargins: reportedMode(probe, "?69") !== undefined,
+		...(!unicode && da1?.includes(7) ? { softFont: true } : {}),
 		...(probe.status ? { deviceStatus: true } : {}),
 		...(probe.settings.has("*x") ? { attributeExtent: Number(probe.settings.get("*x")) || 0 } : {}),
 	};

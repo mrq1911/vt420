@@ -50,6 +50,7 @@ describe("vt420 terminal probe", () => {
 			attributeExtent: 0,
 			doubleSize: true,
 			deviceStatus: true,
+			softFont: true,
 		});
 		expect(result.modes.get("?7")).toBe(1);
 	});
@@ -74,6 +75,7 @@ describe("vt420 terminal probe", () => {
 	it("detects a UTF-8 terminal from the cursor advance of a two-byte character", () => {
 		const utf8 = capabilitiesFromProbe(probe({ rows: 24, columns: 80, utf8: true }), AUTO, {}, undefined);
 		expect(utf8).toMatchObject({ unicode: true, technical: true, supplemental: "latin1", rows: 24, columns: 80 });
+		expect(utf8.softFont).toBeUndefined();
 		// whatever DEC terminal an emulator claims to be, it is named as one and does what a VT220 does
 		const xtermJs = emptyProbe();
 		Object.assign(xtermJs, { da1: [1, 2], da2: [0, 276, 0], utf8Column: 2 });

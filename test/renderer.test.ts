@@ -5,6 +5,7 @@ import {
 	ATTR_UNDERLINE,
 	cellCode,
 	cellSet,
+	glyph,
 	LINE_DOUBLE_BOTTOM,
 	LINE_DOUBLE_TOP,
 	LINE_DOUBLE_WIDTH,
@@ -12,10 +13,11 @@ import {
 	type Line,
 	type LineAttr,
 	lineWidth,
+	SET_SOFT,
 } from "@mrq/vt420/cells.js";
 import { Charset, cellToUnicode, type SupplementalSet } from "@mrq/vt420/charset.js";
 import { type Frame, Renderer, type RendererOptions } from "@mrq/vt420/renderer.js";
-import { charsetDesignations, SESSION_MODES, statusLineType } from "@mrq/vt420/sequences.js";
+import { charsetDesignations, SESSION_MODES, softFont, statusLineType } from "@mrq/vt420/sequences.js";
 import { EMU_BLINK, EMU_BOLD, EMU_REVERSE, EMU_UNDERLINE, Vt420Emulator } from "@mrq/vt420-emu/emulator.js";
 import { describe, expect, it } from "vitest";
 
@@ -173,6 +175,21 @@ describe("vt420 renderer", () => {
 		expect(single).toContain("a\x1bN}b");
 		const run = s.draw(frameOf(s.charset, ["αβγ"]));
 		expect(run).toContain("\x1bnabg");
+	});
+
+	it("lends G2 to the soft font for its glyphs and puts DEC Technical back", () => {
+		const s = setup();
+		const dots = Array.from({ length: 16 }, (_, row) => (row === 8 ? "##########" : ".........."));
+		// a glyph at a time, as a slow line would get them
+		s.emulator.feed(softFont([dots]) + softFont([dots], 0x22));
+		const soft = [glyph(SET_SOFT, 0x21), glyph(SET_SOFT, 0x22)];
+		const line: Line = { cells: [...s.charset.cells("αβ "), ...soft, ...s.charset.cells(" → x")], attr: LINE_SINGLE };
+		const bytes = s.draw(frameOf(s.charset, [line]));
+		expect(bytes).toContain('\x1b* @\x1bN!\x1bN" \x1b*>\x1bN} \x0fx');
+		expect(s.emulator.text(0)).toBe(`αβ ${String.fromCodePoint(0xf0021, 0xf0022)} → x`);
+		// G2 is DEC Technical again for the next frame, locked into GL or not
+		s.draw(frameOf(s.charset, ["Σ", "γδ"]));
+		expect([s.emulator.text(0), s.emulator.text(1)]).toEqual(["Σ", "γδ"]);
 	});
 
 	it("stays in DEC Special Graphics for ASCII codes it shares", () => {

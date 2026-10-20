@@ -1,25 +1,28 @@
 /**
  * Screen cells for the VT420 frontend.
  *
- * A cell is one packed number: a 7-bit code in one of four designated character sets plus the VT420's
- * four visual attributes. Every glyph occupies exactly one column, so widths are array lengths.
+ * A cell is one packed number: a 7-bit code in one of four designated character sets, or the soft font, plus the
+ * VT420's four visual attributes. Every glyph occupies exactly one column, so widths are array lengths.
  *
  *   bits 0-6   code within the set (0x20-0x7F)
  *   bits 7-8   set: G0 ASCII, G1 DEC Special Graphics, G2 DEC Technical, G3 supplemental
  *   bits 9-12  bold, underline, blink, reverse
+ *   bit 13     the soft font (DECDLD), which the renderer designates into G2 while it draws from it
  */
 
 export const SET_ASCII = 0;
 export const SET_GRAPHICS = 1;
 export const SET_TECHNICAL = 2;
 export const SET_SUPPLEMENTAL = 3;
+export const SET_SOFT = 4;
+const SOFT_BIT = 1 << 13;
 
 export const ATTR_BOLD = 1 << 9;
 export const ATTR_UNDERLINE = 1 << 10;
 export const ATTR_BLINK = 1 << 11;
 export const ATTR_REVERSE = 1 << 12;
 export const ATTR_MASK = ATTR_BOLD | ATTR_UNDERLINE | ATTR_BLINK | ATTR_REVERSE;
-export const GLYPH_MASK = 0x1ff;
+export const GLYPH_MASK = 0x1ff | SOFT_BIT;
 
 export const BLANK = 0x20;
 
@@ -42,11 +45,11 @@ export interface Line {
 }
 
 export function glyph(set: number, code: number): number {
-	return (set << 7) | code;
+	return set === SET_SOFT ? SOFT_BIT | code : (set << 7) | code;
 }
 
 export function cellSet(cell: number): number {
-	return (cell >> 7) & 3;
+	return cell & SOFT_BIT ? SET_SOFT : (cell >> 7) & 3;
 }
 
 export function cellCode(cell: number): number {
