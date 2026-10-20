@@ -1,5 +1,6 @@
-# check and test every push; on main, publish each package whose version npm does not have yet, through npm's
-# trusted publishing (no token here; npmjs.com trusts this workflow for the packages)
+# check and test every push; on main, stage each package whose version npm does not have yet, through npm's
+# trusted publishing (no token here; npmjs.com trusts this workflow to stage, not to publish), for a maintainer to
+# approve with 2FA: npm stage approve, or on npmjs.com
 name: ci
 
 on:
@@ -35,10 +36,10 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-      # trusted publishing needs npm 11.5.1 or newer
+      # staged publishing needs npm 11.15.0 or newer
       - run: npm install -g npm@11
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: publish new versions, the SDK before the emulator
+      - name: stage new versions, the SDK before the emulator
         run: |
           for dir in packages/vt420 packages/vt420-emu; do
             name="$(node -p "require('./$dir/package.json').name")"
@@ -49,6 +50,7 @@ jobs:
               # npm trusts a workflow only for a package that exists: the first version goes out by hand
               echo "::warning::$name is not on npm yet; publish it once by hand and add this workflow as its trusted publisher"
             else
-              npm publish --workspace "$dir" --access public
+              # npm stage knows no workspaces, so it runs in the package
+              (cd "$dir" && npm stage publish --access public --provenance)
             fi
           done

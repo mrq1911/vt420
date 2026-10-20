@@ -166,7 +166,8 @@ names resolve to the sources, through the `source` export condition (`node --con
 emulator even to be tested.
 
 A release is a new version in a package's package.json: CI (`.github/workflows/ci.yml`) checks and tests every push,
-and on main publishes each package whose version npm does not have yet, the SDK first, through npm's trusted
-publishing, with provenance. Programs that use them take the new version when they bump their dependency.
+and on main stages each package whose version npm does not have yet, the SDK first, through npm's trusted
+publishing, with provenance. A staged version goes public once a maintainer approves it with 2FA (`npm stage approve`,
+or on npmjs.com). Programs that use them take the new version when they bump their dependency.
 
 MIT licensed; the VT323 font in `src/web/fonts` is under the SIL Open Font License.
